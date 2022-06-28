@@ -17,7 +17,6 @@
 4.MATCH p = (:town {name: "Darjeeling"})-[r:twowheeler*]->(destination)
   WHERE ALL (r IN relationships(p) WHERE r.summer = "true")
   RETURN destination
-  //Szczerze, to powinno działać, nie działa bez jakiegoś sensownego powodu bardzo polubiłem implementacje tych baz danych, które jeśli mają wykorzystanie to chyba w miejscach badawczych itd. , bo nikt w profesjonalnym zastosowaniu nie wykorzysta "unreliable" rozwiązania, tak jak w przypadku mongodb gdzie przetwarzanie batchami, może czasem przyjąć na wejście w map reduce wyniki z poprzedniego batcha... przepraszam za ten wywód, ale jest to pewnien poziom frustracji
 
 5.MATCH (a:Airport)<-[:ORIGIN]-(f:Flight)
   WITH a, count(f) as flights
