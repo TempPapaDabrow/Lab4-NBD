@@ -1,0 +1,54 @@
+1. MATCH (start:town {name:"Darjeeling"}), (end:peak {name:"Sandakphu"}),
+       p=allShortestPaths((start)-[*]->(end))
+   RETURN nodes(p) as path
+
+2. MATCH (darjeeling { name: 'Darjeeling' }), (sandakphu { name: 'Sandakphu' })
+   MATCH paths = allShortestPaths((darjeeling)-[*]-(sandakphu))
+   WHERE ALL (p IN relationships(paths) WHERE p.winter = "true")
+   RETURN paths
+
+3.MATCH p = (start:town {name: "Darjeeling"})-[r*]->(end:peak {name: "Sandakphu"})
+  UNWIND r as rel
+  WITH p, COLLECT(rel.distance) AS distances
+  WITH p, reduce(acc = 0, d in distances | acc + d) as distance
+  RETURN p, distance
+  ORDER BY distance ASC
+
+4.MATCH p = (:town {name: "Darjeeling"})-[r:twowheeler*]->(destination)
+  WHERE ALL (r IN relationships(p) WHERE r.summer = "true")
+  RETURN destination
+  //Szczerze, to powinno działać, nie działa bez jakiegoś sensownego powodu bardzo polubiłem implementacje tych baz danych, które jeśli mają wykorzystanie to chyba w miejscach badawczych itd. , bo nikt w profesjonalnym zastosowaniu nie wykorzysta "unreliable" rozwiązania, tak jak w przypadku mongodb gdzie przetwarzanie batchami, może czasem przyjąć na wejście w map reduce wyniki z poprzedniego batcha... przepraszam za ten wywód, ale jest to pewnien poziom frustracji
+
+5.MATCH (a:Airport)<-[:ORIGIN]-(f:Flight)
+  WITH a, count(f) as flights
+  RETURN a, flights
+  ORDER BY flights ASC
+
+6.MATCH p = (start:Airport { name:"LAX" })<-[:ORIGIN]-(:Flight)-[:ORIGIN|DESTINATION]->(end:Airport)
+  WHERE REDUCE(acc = 0, n IN [x IN NODES(p) WHERE 'Flight' IN LABELS(x)] |
+  acc + [(n)<-[:ASSIGN]-(ticket) | ticket.price][0]
+  ) < 3000
+  RETURN p
+
+7.MATCH p = (start:Airport {name:"LAX"})<-[:ORIGIN]-(:Flight)-[:ORIGIN|DESTINATION*]->(end:Airport {name: "DAY"})
+  WITH p, REDUCE(acc = 0, n IN [x IN NODES(p) WHERE 'Flight' IN LABELS(x)] |
+   acc + [(n)<-[:ASSIGN]-(ticket) | ticket.price][0]
+   ) as price
+  RETURN p, price
+  ORDER BY price desc
+
+8.MATCH p = (:Airport { name:"LAX" })<-[:ORIGIN]-(:Flight)-[:ORIGIN|DESTINATION*]->(:Airport {name: "DAY"})
+WITH p, REDUCE(acc = 0, n IN [x IN NODES(p) WHERE 'Flight' IN LABELS(x)] |
+  acc + [(n)<-[:ASSIGN]-(ticket) | ticket.price][0]
+  ) as price
+RETURN p, price
+ORDER BY price asc LIMIT 1
+
+10.MATCH p = (a1:Airport)<-[:ORIGIN]-(f1:Flight)-[:DESTINATION]->(a2:Airport)<-[:ORIGIN]-(f2:Flight)-[:DESTINATION]-    >(a3:Airport)
+ WHERE not(a1=a2) AND not(a1=a3) AND not(a2=a3)
+ WITH p, REDUCE(acc = 0, n IN [x IN NODES(p) WHERE 'Flight' IN LABELS(x)] |
+  acc + [(n)<-[:ASSIGN]-(ticket {class: 'economy'}) | ticket.price][0]
+  ) as price
+ RETURN p, price
+ ORDER BY price asc LIMIT 1
+
